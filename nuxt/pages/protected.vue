@@ -1,8 +1,8 @@
 <script setup lang="ts">
-const session = useSession()
+const { session } = useUserSession()
 
 definePageMeta({
-  middleware: "auth",
+  middleware: 'auth',
 })
 </script>
 

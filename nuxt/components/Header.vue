@@ -1,26 +1,28 @@
 <script setup lang="ts">
-import { signIn, signOut } from "@/lib/auth/client"
+import { signIn, signOut } from '@/lib/auth/client'
 
-const session = useSession()
+const { session, loggedIn } = useUserSession()
 </script>
 
 <template>
   <header>
     <div class="signedInStatus">
       <p :class="['nojs-show', 'loaded']">
-        <template v-if="session">
+        <template v-if="loggedIn">
           <span
-            v-if="session.user?.image"
+            v-if="session?.user"
             :style="{ backgroundImage: `url(${session.user.image})` }"
             class="avatar"
           />
           <span class="signedInText">
-            <small>Signed in as</small><br />
-            <strong>{{ session.user?.email || session.user?.name }}</strong>
+            <small>Signed in as</small><br>
+            <strong>{{ session?.user?.email || session?.user?.name }}</strong>
           </span>
-          <a href="/api/auth/signout" class="button" @click.prevent="signOut"
-            >Sign out</a
-          >
+          <b
+            href="/api/auth/signout"
+            class="button"
+            @click.prevent="signOut"
+          >Sign out</b>
         </template>
         <template v-else>
           <span class="notSignedInText">You are not signed in</span>
@@ -28,18 +30,21 @@ const session = useSession()
             href="/api/auth/signin"
             class="buttonPrimary"
             @click.prevent="signIn"
-            >Sign in</a
-          >
+          >Sign in</a>
         </template>
       </p>
     </div>
     <nav>
       <ul class="navItems">
         <li class="navItem">
-          <NuxtLink to="/"> Home </NuxtLink>
+          <NuxtLink to="/">
+            Home
+          </NuxtLink>
         </li>
         <li class="navItem">
-          <NuxtLink to="/protected"> Protected </NuxtLink>
+          <NuxtLink to="/protected">
+            Protected
+          </NuxtLink>
         </li>
       </ul>
     </nav>
