@@ -1,6 +1,6 @@
-import { NuxtAuthHandler } from "@/lib/auth/server"
-import GithubProvider from "@auth/core/providers/github"
-import type { AuthConfig } from "@auth/core"
+import GithubProvider from '@auth/core/providers/github'
+import type { AuthConfig } from '@auth/core'
+import { NuxtAuthHandler } from '@/lib/auth/server'
 
 const runtimeConfig = useRuntimeConfig()
 

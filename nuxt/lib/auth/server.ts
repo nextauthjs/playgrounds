@@ -1,38 +1,56 @@
-import { AuthConfig, Session } from "@auth/core/types"
-import { Auth } from "@auth/core"
-import { fromNodeMiddleware, getRequestURL, H3Event } from "h3"
-import { createMiddleware } from "@hattip/adapter-node"
+import type { AuthAction, AuthConfig, Session } from '@auth/core/types'
+import { Auth, isAuthAction } from '@auth/core'
+import type { H3Event } from 'h3'
+import { toWebRequest, eventHandler } from 'h3'
 
-export function NuxtAuthHandler(options: AuthConfig) {
-  async function handler(ctx: { request: Request }) {
-    options.trustHost ??= true
-
-    return Auth(ctx.request, options)
-  }
-
-  const middleware = createMiddleware(handler)
-
-  return fromNodeMiddleware(middleware)
+export interface NuxtAuthConfig extends AuthConfig {
+  /**
+   * Defines the base path for the auth routes.
+   * @default '/api/auth'
+   */
+  prefix?: string
 }
+
+export function NuxtAuthHandler(authOptions: AuthConfig) {
+  authOptions.basePath ??= '/api/auth'
+  authOptions.secret ??= process.env.AUTH_SECRET
+  authOptions.trustHost ??= !!(
+    process.env.AUTH_TRUST_HOST
+    ?? process.env.VERCEL
+    ?? process.env.NODE_ENV !== 'production'
+  )
+
+  return eventHandler(async (event) => {
+    const request = toWebRequest(event)
+
+    const url = new URL(request.url)
+    const action = url.pathname
+      .slice(authOptions.basePath!.length + 1)
+      .split('/')[0] as AuthAction
+
+    if (isAuthAction(action) && !url.pathname.startsWith(authOptions.basePath + '/')) {
+      return
+    }
+
+    return await Auth(request, authOptions)
+  })
+}
+
+export type GetSessionResult = Promise<Session | null>
 
 export async function getSession(
   event: H3Event,
-  options: AuthConfig
-): Promise<Session | null> {
+  options: Omit<AuthConfig, 'raw'>,
+): GetSessionResult {
+  const req = toWebRequest(event)
+  options.basePath ??= '/api/auth'
+  options.secret ??= process.env.AUTH_SECRET
   options.trustHost ??= true
 
-  const headers = getRequestHeaders(event)
-  const nodeHeaders = new Headers()
-
-  const url = new URL("/api/auth/session", getRequestURL(event))
-
-  Object.keys(headers).forEach((key) => {
-    nodeHeaders.append(key, headers[key] as any)
-  })
-
+  const url = new URL('/api/auth/session', req.url)
   const response = await Auth(
-    new Request(url, { headers: nodeHeaders }),
-    options
+    new Request(url, { headers: req.headers }),
+    options,
   )
 
   const { status = 200 } = response
